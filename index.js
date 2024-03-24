@@ -6,10 +6,10 @@ const sharp = require("sharp");
 const path = require("path");
 
 const storage = new Storage();
-const bucketName = "";
-const localTempDirectory = "Desktop/";
+const bucketName = "cdn.cottonet.co.il";
+const localTempDirectory = "Desktop/cotton";
 const localDirectory = path.join(os.homedir(), localTempDirectory);
-const lookInSubdirectory = ""; // empty string for root directory
+const lookInSubdirectory = "newsite/2024/03"; // empty string for root directory
 
 async function convertToWebp(localPath, savePath) {
   try {
@@ -39,9 +39,21 @@ async function downloadImageFromUrl(url, savePath) {
 }
 
 async function checkWebpVersion(bucketName, localDirectory) {
-  const [files] = await storage
+  // test connection to bucket to see if it exists and we have access to it
+  try {
+    await storage.bucket(bucketName).exists();
+  } catch (err) {
+    console.error(
+      `An error occurred while trying to access the bucket: ${err}`
+    );
+  }
+
+  let [files] = await storage
     .bucket(bucketName)
     .getFiles({ prefix: lookInSubdirectory });
+
+  // filter out files containing .bk. in the name
+  files = files.filter((file) => !file.name.includes(".bk."));
 
   for (const file of files) {
     if (!file.name.endsWith(".webp")) {
@@ -51,7 +63,7 @@ async function checkWebpVersion(bucketName, localDirectory) {
       const bucketPath = pathParts.join("/");
 
       // Check if webp version exists
-      const baseName = fileName.split(".").slice(0, -1).join(".");
+      const baseName = fileName.split(".").join(".");
       const webpFileName = `${baseName}.webp`;
       const webpFile = storage
         .bucket(bucketName)
@@ -91,6 +103,8 @@ async function checkWebpVersion(bucketName, localDirectory) {
           );
         }
       }
+    } else {
+      console.log(`WebP version for ${file.name} already exists.`);
     }
   }
 }
