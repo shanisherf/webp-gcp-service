@@ -6,10 +6,10 @@ const sharp = require("sharp");
 const path = require("path");
 
 const storage = new Storage();
-const bucketName = "cdn.cottonet.co.il";
-const localTempDirectory = "Desktop/cotton";
+const bucketName = "XXX";
+const localTempDirectory = "Desktop/XXX";
 const localDirectory = path.join(os.homedir(), localTempDirectory);
-const lookInSubdirectory = "newsite/2024/03"; // empty string for root directory
+const lookInSubdirectory = "newsite/2024/06"; // empty string for root directory
 
 async function convertToWebp(localPath, savePath) {
   try {
@@ -48,63 +48,71 @@ async function checkWebpVersion(bucketName, localDirectory) {
     );
   }
 
-  let [files] = await storage
+  const [files] = await storage
     .bucket(bucketName)
     .getFiles({ prefix: lookInSubdirectory });
 
   // filter out files containing .bk. in the name
-  files = files.filter((file) => !file.name.includes(".bk."));
+  const jpgFiles = files.filter(
+    (file) => !file.name.includes(".bk.") && !file.name.endsWith(".webp")
+  );
 
-  for (const file of files) {
-    if (!file.name.endsWith(".webp")) {
-      // Separate the base file name and the path in the bucket
-      const pathParts = file.name.split("/");
-      const fileName = pathParts.pop();
-      const bucketPath = pathParts.join("/");
+  const fileNamesSet = new Set(files.map((file) => file.name));
 
-      // Check if webp version exists
-      const baseName = fileName.split(".").join(".");
-      const webpFileName = `${baseName}.webp`;
-      const webpFile = storage
-        .bucket(bucketName)
-        .file(`${bucketPath ? `${bucketPath}/` : ""}${webpFileName}`);
+  const missingFiles = jpgFiles.filter(
+    (file) =>
+      !fileNamesSet.has(`${file.name}.webp`) &&
+      file.name.endsWith(".jpg" || ".jpeg" || ".png")
+  );
 
-      // Check if the webp version exists
-      if (!(await webpFile.exists())[0]) {
-        console.log(`WebP version for ${file.name} does not exist.`);
-        const localPath = path.join(localDirectory, fileName);
-        const webpPath = path.join(localDirectory, webpFileName);
+  if (missingFiles.length === 0) {
+    console.log("No missing files found! Goodbye.");
+    return;
+  }
 
-        // Download the image file
-        await downloadImageFromUrl(
-          `https://storage.googleapis.com/${bucketName}/${file.name}`,
-          localPath
-        );
+  console.log(`Found ${missingFiles.length} missing files.`);
 
-        // Try to convert to webp using local machine
+  for (const file of missingFiles) {
+    // if (file.name.endsWith(".jpg" || ".jpeg" || ".png")) {
+    // Separate the base file name and the path in the bucket
+    const pathParts = file.name.split("/");
+    const fileName = pathParts.pop();
+    const bucketPath = pathParts.join("/");
 
-        try {
-          await convertToWebp(localPath, webpPath);
-        } catch (err) {
-          console.error(
-            `An error occurred while converting the image to webp: ${err}`
-          );
-        }
+    // Check if webp version exists
+    const baseName = fileName.split(".").join(".");
+    const webpFileName = `${baseName}.webp`;
 
-        // Upload the webp version to the original subdirectory in the bucket
-        try {
-          await storage.bucket(bucketName).upload(webpPath, {
-            destination: `${bucketPath ? `${bucketPath}/` : ""}${webpFileName}`,
-          });
-          console.log(`WebP version for ${file.name} is created and uploaded.`);
-        } catch (err) {
-          console.error(
-            `An error occurred while uploading the webp version to the bucket: ${err}`
-          );
-        }
-      }
-    } else {
-      console.log(`WebP version for ${file.name} already exists.`);
+    console.log(`WebP version for ${file.name} does not exist.`);
+    const localPath = path.join(localDirectory, fileName);
+    const webpPath = path.join(localDirectory, webpFileName);
+
+    // Download the image file
+    await downloadImageFromUrl(
+      `https://storage.googleapis.com/${bucketName}/${file.name}`,
+      localPath
+    );
+
+    // Try to convert to webp using local machine
+
+    try {
+      await convertToWebp(localPath, webpPath);
+    } catch (err) {
+      console.error(
+        `An error occurred while converting the image to webp: ${err}`
+      );
+    }
+
+    // Upload the webp version to the original subdirectory in the bucket
+    try {
+      await storage.bucket(bucketName).upload(webpPath, {
+        destination: `${bucketPath ? `${bucketPath}/` : ""}${webpFileName}`,
+      });
+      console.log(`WebP version for ${file.name} is created and uploaded.`);
+    } catch (err) {
+      console.error(
+        `An error occurred while uploading the webp version to the bucket: ${err}`
+      );
     }
   }
 }
