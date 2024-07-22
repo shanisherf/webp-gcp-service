@@ -52,12 +52,12 @@ async function checkWebpVersion(bucketName, localDirectory) {
     .bucket(bucketName)
     .getFiles({ prefix: lookInSubdirectory });
 
+  const fileNamesSet = new Set(files.map((file) => file.name));
+
   // filter out files containing .bk. in the name
   const jpgFiles = files.filter(
     (file) => !file.name.includes(".bk.") && !file.name.endsWith(".webp")
   );
-
-  const fileNamesSet = new Set(files.map((file) => file.name));
 
   const missingFiles = jpgFiles.filter(
     (file) =>
@@ -73,7 +73,6 @@ async function checkWebpVersion(bucketName, localDirectory) {
   console.log(`Found ${missingFiles.length} missing files.`);
 
   for (const file of missingFiles) {
-    // if (file.name.endsWith(".jpg" || ".jpeg" || ".png")) {
     // Separate the base file name and the path in the bucket
     const pathParts = file.name.split("/");
     const fileName = pathParts.pop();
