@@ -1,6 +1,6 @@
 {
   "name": "gcp-webp-service",
-  "version": "0.0.2",
+  "version": "1.0.0",
   "author": "Shani Sherf",
   "description": "A simple webp generate service for GCP",
   "main": "index.js",
