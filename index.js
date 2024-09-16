@@ -77,9 +77,8 @@ async function checkWebpVersion(bucketName, localDirectory) {
     const pathParts = file.name.split("/");
     const fileName = pathParts.pop();
     const bucketPath = pathParts.join("/");
-
-    // Check if webp version exists
     const baseName = fileName.split(".").join(".");
+
     const webpFileName = `${baseName}.webp`;
 
     console.log(`WebP version for ${file.name} does not exist.`);

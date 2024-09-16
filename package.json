@@ -10,9 +10,9 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "@google-cloud/storage": "^7.11.3",
-    "axios": "^1.7.2",
-    "express": "^4.19.1",
-    "sharp": "^0.33.4"
+    "@google-cloud/storage": "^7.12.1",
+    "axios": "^1.7.7",
+    "express": "^4.21.0",
+    "sharp": "^0.33.5"
   }
 }
